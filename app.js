@@ -1,15 +1,13 @@
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const connect = require("./lib/connect");
 const Note = require("./model/Notes");
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
-
-/* todo
-- [ ] add CORS package
-*/
+app.use(cors());
 
 app.get("/", async (req, res) => {
   await connect();
@@ -46,6 +44,39 @@ app.get("/:id", async (request, response) => {
     return response.json(note);
   } catch (error) {
     return response.json({ message: "Could NOT find the note.", error });
+  }
+});
+
+app.put("/:id", async (request, response) => {
+  await connect();
+  const { id } = request.params;
+  const { value } = request.body;
+
+  try {
+    const res = await Note.updateOne({ _id: id }, { content: value });
+    if (res.modifiedCount === 1) {
+      response.json({ message: "Successfully updated the note." });
+    } else {
+      response.json({ message: "Note could NOT be updated." });
+    }
+  } catch (error) {
+    response.json({ message: "An error occurred.", error });
+  }
+});
+
+app.delete("/:id", async (request, response) => {
+  await connect();
+  const { id } = request.params;
+
+  try {
+    const res = await Note.deleteOne({ _id: id });
+    if (res.deletedCount === 1) {
+      response.json({ message: "Note successfully deleted." });
+    } else {
+      response.json({ message: "Note could NOT be deleted." });
+    }
+  } catch (error) {
+    response.json({ message: "An error occured.", error });
   }
 });
 
