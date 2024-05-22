@@ -10,7 +10,7 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
-app.get("/", async (req, res) => {
+app.get("/", async (request, response) => {
   response.json({ message: "Welcome to the note-taking app with MongoDB!" });
 });
 
