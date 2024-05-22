@@ -53,7 +53,6 @@ app.post("/:user", async (request, response) => {
   const { content } = request.body;
   try {
     const foundUser = await User.findOne({ name: user });
-    console.log(foundUser);
 
     if (foundUser) {
       const res = await Note.create({ content, userId: foundUser._id });
@@ -84,50 +83,75 @@ app.get("/users", async (request, response) => {
 });
 
 /* get an individual note from a user */
-app.get("/:user/:note", async (request, response) => {
+app.get("/:user/:noteId", async (request, response) => {
   await connect();
-  const { user } = request.params;
+  const { user, noteId } = request.params;
 
   try {
-    const note = await Note.findOne({ _id: id });
-    return response.json(note);
+    const foundUser = await User.findOne({ name: user });
+    if (foundUser) {
+      const note = await Note.findOne({ _id: noteId });
+      if (note) {
+        return response.json(note);
+      } else {
+        return response.json({ message: "Not could NOT be found." });
+      }
+    } else {
+      return response.json({ message: `The user ${user} does not exist.` });
+    }
   } catch (error) {
-    return response.json({ message: "Could NOT find the note.", error });
+    return response.json({ message: "An error occured.", error });
   }
 });
 
 /* update an individual note from a user */
-app.put("/:user/:note", async (request, response) => {
+app.put("/:user/:noteId", async (request, response) => {
   await connect();
-  const { id } = request.params;
-  const { value } = request.body;
+  const { user, noteId } = request.params;
+  const { content } = request.body;
+
+  if (!content) {
+    return response.json({
+      message: "The 'value' key in the body is missing.",
+    });
+  }
 
   try {
-    const res = await Note.updateOne({ _id: id }, { content: value });
-    if (res.modifiedCount === 1) {
-      response.json({ message: "Successfully updated the note." });
+    const foundUser = await User.findOne({ name: user });
+    if (foundUser) {
+      const res = await Note.updateOne({ _id: noteId }, { content: content });
+      if (res.modifiedCount === 1) {
+        return response.json({ message: "Successfully updated the note." });
+      } else {
+        return response.json({ message: "Note could NOT be updated." });
+      }
     } else {
-      response.json({ message: "Note could NOT be updated." });
+      return response.json({ message: `The user ${user} does not exist.` });
     }
   } catch (error) {
-    response.json({ message: "An error occurred.", error });
+    return response.json({ message: "An error occurred.", error });
   }
 });
 
 /* delete an individual note from a user */
-app.delete("/:user/:note", async (request, response) => {
+app.delete("/:user/:noteId", async (request, response) => {
   await connect();
-  const { id } = request.params;
+  const { user, noteId } = request.params;
 
   try {
-    const res = await Note.deleteOne({ _id: id });
-    if (res.deletedCount === 1) {
-      response.json({ message: "Note successfully deleted." });
+    const foundUser = await User.findOne({ name: user });
+    if (foundUser) {
+      const res = await Note.deleteOne({ _id: noteId });
+      if (res.deletedCount === 1) {
+        return response.json({ message: "Note successfully deleted." });
+      } else {
+        return response.json({ message: "Note could NOT be deleted." });
+      }
     } else {
-      response.json({ message: "Note could NOT be deleted." });
+      return response.json({ message: `The user ${user} does not exist.` });
     }
   } catch (error) {
-    response.json({ message: "An error occured.", error });
+    return response.json({ message: "An error occured.", error });
   }
 });
 
