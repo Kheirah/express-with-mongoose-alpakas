@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const connect = require("./lib/connect");
 const Note = require("./model/Notes");
+const User = require("./model/Users");
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -10,34 +11,82 @@ app.use(express.json());
 app.use(cors());
 
 app.get("/", async (req, res) => {
-  await connect();
-  const notes = await Note.find();
-
-  if (notes.length === 0) {
-    return res.json({ message: "Notes could not be found." });
-  }
-
-  res.json(notes);
+  response.json({ message: "Welcome to the note-taking app with MongoDB!" });
 });
 
 app.post("/", async (request, response) => {
   await connect();
-  const { value } = request.body;
+  const { username } = request.body;
 
   try {
-    const res = await Note.create({ content: value });
-    return response.json({
-      id: res._id,
-      message: "Successfully created a new note.",
-    });
+    const res = await User.create({ name: username });
+    response.json({ id: res._id, message: "Successfully created a new user." });
   } catch (error) {
-    return response.json({ message: "Could NOT create a new note.", error });
+    response.json({ message: "Could NOT create a new user.", error });
   }
 });
 
-app.get("/:id", async (request, response) => {
+app.get("/:user", async (request, response) => {
   await connect();
-  const { id } = request.params;
+  const { user } = request.params;
+
+  const foundUser = await User.findOne({ name: user });
+
+  if (foundUser) {
+    try {
+      const notes = await Note.find({ userId: foundUser._id }).populate(
+        "userId"
+      );
+      response.json(notes);
+    } catch (error) {
+      response.json({ message: "An error occured", error });
+    }
+  } else {
+    response.json({ message: "Could NOT find the user." });
+  }
+});
+
+app.post("/:user", async (request, response) => {
+  await connect();
+
+  const { user } = request.params;
+  const { content } = request.body;
+  try {
+    const foundUser = await User.findOne({ name: user });
+    console.log(foundUser);
+
+    if (foundUser) {
+      const res = await Note.create({ content, userId: foundUser._id });
+      return response.json({
+        id: res._id,
+        message: `Successfully created a new note for ${user}.`,
+      });
+    } else {
+      response.json({ message: "Could NOT find the user." });
+    }
+
+    response.json(foundUser);
+  } catch (error) {
+    response.json({ message: "An error occured.", error });
+  }
+});
+
+/* This route/endpoint is optional. The frontend does not require it. */
+app.get("/users", async (request, response) => {
+  await connect();
+
+  try {
+    const users = await User.find();
+    response.json(users);
+  } catch (error) {
+    response.json({ message: "An error occured.", error });
+  }
+});
+
+/* get an individual note from a user */
+app.get("/:user/:note", async (request, response) => {
+  await connect();
+  const { user } = request.params;
 
   try {
     const note = await Note.findOne({ _id: id });
@@ -47,7 +96,8 @@ app.get("/:id", async (request, response) => {
   }
 });
 
-app.put("/:id", async (request, response) => {
+/* update an individual note from a user */
+app.put("/:user/:note", async (request, response) => {
   await connect();
   const { id } = request.params;
   const { value } = request.body;
@@ -64,7 +114,8 @@ app.put("/:id", async (request, response) => {
   }
 });
 
-app.delete("/:id", async (request, response) => {
+/* delete an individual note from a user */
+app.delete("/:user/:note", async (request, response) => {
   await connect();
   const { id } = request.params;
 

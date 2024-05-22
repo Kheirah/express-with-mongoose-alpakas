@@ -6,6 +6,7 @@ const { Schema } = mongoose;
 const noteSchema = new Schema(
   {
     content: { type: String, required: true },
+    userId: { type: mongoose.Types.ObjectId, required: true, ref: "User" },
   },
   { versionKey: false }
 );
