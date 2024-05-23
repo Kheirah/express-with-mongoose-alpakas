@@ -29,15 +29,25 @@ app.post("/", async (request, response) => {
 app.get("/:user", async (request, response) => {
   await connect();
   const { user } = request.params;
+  const { search } = request.query;
 
   const foundUser = await User.findOne({ name: user });
 
   if (foundUser) {
     try {
-      const notes = await Note.find({ userId: foundUser._id }).populate(
-        "userId"
-      );
-      response.json(notes);
+      if (search) {
+        console.log(search);
+        const filteredNotes = await Note.find({
+          userId: foundUser._id,
+          content: new RegExp(search, "i"), //{ $regex: search, $options: "i" }
+        });
+        response.json(filteredNotes);
+      } else {
+        const notes = await Note.find({ userId: foundUser._id }).populate(
+          "userId"
+        );
+        response.json(notes);
+      }
     } catch (error) {
       response.json({ message: "An error occured", error });
     }
